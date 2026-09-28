@@ -1,0 +1,9 @@
+ultralytics
+gradio
+opencv-python-headless
+pillow
+numpy
+pandas
+matplotlib
+seaborn
+pyyaml
