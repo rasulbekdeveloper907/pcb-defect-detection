@@ -39,7 +39,7 @@ METRICS_DIR = OUTPUTS_DIR / "metrics"
 
 MODEL_DIR = ROOT_DIR / "models"
 
-MODEL_NAME = "yolo11n.pt"
+MODEL_NAME = "yolo11s.pt"
 
 BEST_MODEL = MODEL_DIR / "best.pt"
 
