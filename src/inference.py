@@ -3,7 +3,7 @@ from pathlib import Path
 from PIL import Image
 from ultralytics import YOLO
 
-from config import (
+from src.config import (
     BEST_MODEL,
     CONFIDENCE_THRESHOLD,
 )

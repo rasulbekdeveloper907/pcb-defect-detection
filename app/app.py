@@ -1,18 +1,23 @@
+import sys
+from pathlib import Path
+
 import gradio as gr
 import pandas as pd
 
-from pathlib import Path
-import sys
-
 
 # ============================================================
-# ADD PROJECT ROOT TO PYTHON PATH
+# PROJECT ROOT
 # ============================================================
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
-sys.path.append(str(ROOT_DIR))
+# Add project root to Python path
+sys.path.insert(0, str(ROOT_DIR))
 
+
+# ============================================================
+# IMPORT DETECTOR
+# ============================================================
 
 from src.inference import PCBDetector
 
@@ -22,7 +27,6 @@ from src.inference import PCBDetector
 # ============================================================
 
 MODEL_PATH = ROOT_DIR / "models" / "best.pt"
-
 
 detector = PCBDetector(
     model_path=MODEL_PATH
@@ -37,43 +41,44 @@ def detect_defects(image, confidence):
 
     if image is None:
 
+        empty_dataframe = pd.DataFrame(
+            columns=[
+                "Defect",
+                "Confidence",
+                "X1",
+                "Y1",
+                "X2",
+                "Y2",
+            ]
+        )
+
         return (
             None,
-            pd.DataFrame(
-                columns=[
-                    "Defect",
-                    "Confidence",
-                    "X1",
-                    "Y1",
-                    "X2",
-                    "Y2",
-                ]
-            ),
+            empty_dataframe,
             "Please upload a PCB image."
         )
 
+    # Update confidence threshold
     detector.confidence = confidence
 
-    annotated_image, detections = (
-        detector.predict_image(image)
+    # Run prediction
+    annotated_image, detections = detector.predict_image(
+        image
     )
 
+    # Prepare detection table
     rows = []
 
     for detection in detections:
 
-        x1, y1, x2, y2 = (
-            detection["box"]
-        )
+        x1, y1, x2, y2 = detection["box"]
 
         rows.append(
             {
                 "Defect": detection["class"],
-
                 "Confidence": (
                     f"{detection['confidence']:.2%}"
                 ),
-
                 "X1": round(x1, 2),
                 "Y1": round(y1, 2),
                 "X2": round(x2, 2),
@@ -83,6 +88,7 @@ def detect_defects(image, confidence):
 
     dataframe = pd.DataFrame(rows)
 
+    # Status message
     if len(detections) == 0:
 
         status = "✅ No PCB defects detected."
@@ -97,12 +103,12 @@ def detect_defects(image, confidence):
     return (
         annotated_image,
         dataframe,
-        status
+        status,
     )
 
 
 # ============================================================
-# GRADIO UI
+# GRADIO INTERFACE
 # ============================================================
 
 with gr.Blocks(
@@ -113,14 +119,18 @@ with gr.Blocks(
         """
         # 🔧 PCB Defect Detection System
 
-        Upload a PCB image and the YOLO model will
-        detect manufacturing defects automatically.
+        Upload a PCB image and the YOLO11s model
+        will detect manufacturing defects automatically.
         """
     )
 
-    with gr.Row:
+    with gr.Row():
 
-        with gr.Column:
+        # ----------------------------------------------------
+        # INPUT
+        # ----------------------------------------------------
+
+        with gr.Column():
 
             input_image = gr.Image(
                 type="numpy",
@@ -140,7 +150,11 @@ with gr.Blocks(
                 variant="primary"
             )
 
-        with gr.Column:
+        # ----------------------------------------------------
+        # OUTPUT
+        # ----------------------------------------------------
+
+        with gr.Column():
 
             output_image = gr.Image(
                 label="Detection Result"
@@ -149,6 +163,11 @@ with gr.Blocks(
             status = gr.Markdown(
                 "Upload an image to start."
             )
+
+
+    # ========================================================
+    # DETECTION TABLE
+    # ========================================================
 
     results_table = gr.Dataframe(
         headers=[
@@ -164,14 +183,16 @@ with gr.Blocks(
     )
 
 
+    # ========================================================
+    # BUTTON EVENT
+    # ========================================================
+
     detect_button.click(
         fn=detect_defects,
-
         inputs=[
             input_image,
             confidence,
         ],
-
         outputs=[
             output_image,
             results_table,
@@ -187,3 +208,4 @@ with gr.Blocks(
 if __name__ == "__main__":
 
     demo.launch()
+
